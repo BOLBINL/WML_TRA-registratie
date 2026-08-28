@@ -1409,6 +1409,51 @@ function getAfdelingVanGroep(g) {
   return null; // null = Overige
 }
 
+// ══════════════════════════════════════════════════════════════════
+// AFDELING TABS — dynamisch gegenereerd vanuit WML_FormVragen
+// Soort = 'afdeling' → Title=naam, Opties=emoji, Volgorde=volgorde
+// Fallback: hardcoded lijst als SP geen afdeling-records heeft
+// ══════════════════════════════════════════════════════════════════
+var AFDELINGEN_CONFIG = []; // gevuld door laadFormVragen
+
+var AFDELINGEN_FALLBACK = [
+  { naam: 'Deegmakerij',        emoji: '🥐', volgorde: 1 },
+  { naam: 'Ovenruimte',         emoji: '🔥', volgorde: 2 },
+  { naam: 'Droge grondstoffen', emoji: '🌾', volgorde: 3 },
+  { naam: 'Palletijzer',        emoji: '📦', volgorde: 4 },
+  { naam: 'Shuttle',            emoji: '🚌', volgorde: 5 }
+];
+
+function renderAfdelingTabs() {
+  var tabsWrapper  = document.getElementById('afd-tabs-wrapper');
+  var selectEl     = document.getElementById('afdeling-select');
+  if (!tabsWrapper || !selectEl) return;
+
+  var lijst = AFDELINGEN_CONFIG.length > 0 ? AFDELINGEN_CONFIG : AFDELINGEN_FALLBACK;
+
+  var tabsHTML    = '<button class="afd-tab alle' + (actieveAfdeling === null ? ' active' : '')
+    + '" onclick="setAfdeling(null)">🏭 Alle afdelingen</button>';
+  var optionsHTML = '<option value="">🏭 Alle afdelingen</option>';
+
+  lijst.forEach(function(a) {
+    var isActive = actieveAfdeling === a.naam;
+    var label    = (a.emoji ? a.emoji + ' ' : '') + a.naam;
+    tabsHTML    += '<button class="afd-tab' + (isActive ? ' active' : '')
+      + '" onclick="setAfdeling(\'' + a.naam.replace(/'/g, "\\'") + '\')">' + label + '</button>';
+    optionsHTML += '<option value="' + a.naam + '"' + (isActive ? ' selected' : '') + '>'
+      + label + '</option>';
+  });
+
+  // Blokkades: altijd als laatste, aparte semantiek
+  var isBlokkade = actieveAfdeling === 'Blokkades';
+  tabsHTML    += '<button class="afd-tab' + (isBlokkade ? ' active' : '')
+    + '" onclick="setAfdeling(\'Blokkades\')">⛔ Blokkades</button>';
+  optionsHTML += '<option value="Blokkades"' + (isBlokkade ? ' selected' : '') + '>⛔ Blokkades</option>';
+
+  tabsWrapper.innerHTML = tabsHTML;
+  selectEl.innerHTML    = optionsHTML;
+}
+
 var actieveAfdeling = null; // null = alle afdelingen
 
 function setAfdeling(naam) {
@@ -4584,13 +4629,14 @@ function laadFormVragen(callback) {
       formVragen = {};
       kuipConfig = { Product:[], RecNr:[], AantalZakken:[], WaterL:[] };
       kuipVerplicht = {};
-      var _afwijkingBuffer  = [];
+      var _afwijkingBuffer      = [];
       var _kuipAanpassingBuffer = [];
-      var _locatieBuffer    = {};
-      var _lijnBuffer       = [];
-      var _externBuffer     = [];
-      var _ploegBuffer      = {};
-      var _medewerkerBuffer = {};
+      var _locatieBuffer        = {};
+      var _afdelingBuffer       = [];   // Soort = afdeling → tabs + emoji
+      var _lijnBuffer           = [];
+      var _externBuffer         = [];
+      var _ploegBuffer          = {};
+      var _medewerkerBuffer     = {};
       items.forEach(function(r) {
         var code     = String(r.FormNaam || r.FormCode || '').trim();
         var soortRaw = r.Soort && r.Soort.Value ? r.Soort.Value : (r.Soort || r.Type || '');
@@ -4608,6 +4654,15 @@ function laadFormVragen(callback) {
           var prefix = String(r.Title || '').trim();
           var afd    = String((r.Opties || '').split(';')[0] || '').trim();
           if (prefix && afd) _locatieBuffer[prefix] = afd;
+          return;
+        }
+
+        // AFDELING DEFINITIE (Soort = afdeling)
+        // Title = afdelingnaam (bv. 'Deegmakerij'), Opties = emoji (bv. '🥐'), Volgorde = sorteervolgorde
+        if (type === 'afdeling') {
+          var afdNaam  = String(r.Title || '').trim();
+          var afdEmoji = String((r.Opties || '').split(';')[0] || '').trim();
+          if (afdNaam) _afdelingBuffer.push({ naam: afdNaam, emoji: afdEmoji, volgorde: volgorde });
           return;
         }
 
@@ -4700,6 +4755,11 @@ function laadFormVragen(callback) {
         // Overschrijf hardcoded binToAfdeling volledig vanuit SP
         binToAfdeling = _locatieBuffer;
       }
+      if (_afdelingBuffer.length) {
+        _afdelingBuffer.sort(function(a, b){ return a.volgorde - b.volgorde; });
+        AFDELINGEN_CONFIG = _afdelingBuffer;
+      }
+      renderAfdelingTabs();
       if (_lijnBuffer.length) {
         _lijnBuffer.sort(function(a, b){ return a.volgorde - b.volgorde; });
         VERWERKING_LIJNEN = _lijnBuffer.map(function(l){ return l.naam; });
