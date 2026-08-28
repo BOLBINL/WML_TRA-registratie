@@ -553,7 +553,6 @@ button,input{font-family:var(--sans);font-size:14px}
     <button class="afd-tab" onclick="setAfdeling('Droge grondstoffen')">🌾 Droge grondstoffen</button>
     <button class="afd-tab" onclick="setAfdeling('Palletijzer')">📦 Palletijzer</button>
     <button class="afd-tab" onclick="setAfdeling('Shuttle')">🚌 Shuttle</button>
-    <button class="afd-tab" onclick="setAfdeling('Blokkades')">⛔ Blokkades</button>
   </div>
   <!-- Mobiel: dropdown select -->
   <div id="afd-select-wrapper">
@@ -564,7 +563,6 @@ button,input{font-family:var(--sans);font-size:14px}
       <option value="Droge grondstoffen">🌾 Droge grondstoffen</option>
       <option value="Palletijzer">📦 Palletijzer</option>
       <option value="Shuttle">🚌 Shuttle</option>
-      <option value="Blokkades">⛔ Blokkades</option>
     </select>
   </div>
 </div>
@@ -1361,8 +1359,7 @@ var binToAfdeling = {
   'ST':        'Palletijzer',
   'IF':        'Palletijzer',
   'BAND':      'Palletijzer',
-  'BLOCKVERP': 'Palletijzer',
-  'B-BAND':    'Palletijzer',  // ← komma hier
+  'B-BAND':    'Palletijzer',
 
   // 🚌 SHUTTLE
   // Numerieke locaties vanaf 36
@@ -1443,12 +1440,6 @@ function renderAfdelingTabs() {
     optionsHTML += '<option value="' + a.naam + '"' + (isActive ? ' selected' : '') + '>'
       + label + '</option>';
   });
-
-  // Blokkades: altijd als laatste, aparte semantiek
-  var isBlokkade = actieveAfdeling === 'Blokkades';
-  tabsHTML    += '<button class="afd-tab' + (isBlokkade ? ' active' : '')
-    + '" onclick="setAfdeling(\'Blokkades\')">⛔ Blokkades</button>';
-  optionsHTML += '<option value="Blokkades"' + (isBlokkade ? ' selected' : '') + '>⛔ Blokkades</option>';
 
   tabsWrapper.innerHTML = tabsHTML;
   selectEl.innerHTML    = optionsHTML;
