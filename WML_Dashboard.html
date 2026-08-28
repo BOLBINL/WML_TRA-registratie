@@ -170,18 +170,29 @@ button,input{font-family:var(--sans);font-size:14px}
 .bc-header{padding:12px 14px 8px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
 .bc-meta{flex:1;min-width:0}
 .bc-nr{font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:2px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
-.bc-name{font-size:13px;font-weight:500;line-height:1.3}
+.bc-name{font-size:15px;font-weight:600;line-height:1.3}
 .done-tag{flex-shrink:0;display:inline-flex;align-items:center;gap:4px;background:var(--bi-gold-pale);color:var(--bi-navy);font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;border:1px solid var(--bi-gold-border)}
 .fefo-corrected-tag{display:inline-flex;align-items:center;gap:2px;background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;font-size:9px;font-weight:600;padding:2px 6px;border-radius:20px}
 .bc-labels{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 14px 5px}
 .bc-label{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:4px}
 .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.dot-prod{background:var(--bi-navy)}
-.dot-next{background:var(--bi-gold)}
+.dot-prod{background:#F97316}
+.dot-next{background:#22C55E}
 .bc-panels{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 14px 14px}
 .bc-panel{border-radius:10px;padding:10px 11px;border:1px solid var(--border)}
-.bc-panel.prod-panel{background:var(--bi-navy-pale);border-color:#8A9BB8}
-.bc-panel.next-panel{background:var(--bi-gold-pale);border-color:var(--bi-gold-border)}
+/* IN PROD — amber/oranje: actief in gebruik */
+.bc-panel.prod-panel{background:#FFF7ED;border-color:#FED7AA}
+.prod-panel .pf-val{color:#C2410C}
+.prod-panel .pf-sub{color:#9A3412;opacity:.8}
+.prod-panel .tht-lbl{color:#C2410C;background:#FEF3C7;border-color:#FED7AA}
+.prod-panel .tht-val{color:#9A3412}
+.prod-panel .check-btn{color:#F97316}
+/* VOLGEND (FEFO) — groen: klaar/beschikbaar */
+.bc-panel.next-panel{background:#F0FDF4;border-color:#86EFAC}
+.next-panel .pf-val{color:#15803D}
+.next-panel .pf-sub{color:#166534;opacity:.8}
+.next-panel .tht-lbl{color:#15803D;background:#DCFCE7;border-color:#86EFAC}
+.next-panel .tht-val{color:#14532D}
 .bc-panel.done-panel{background:#F4F4F4;border-color:#E0E0E0;opacity:.5}
 .bc-panel.empty-panel{background:var(--cream);border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;min-height:86px}
 .empty-panel span{font-size:11px;color:#C8C0B4}
@@ -196,7 +207,9 @@ button,input{font-family:var(--sans);font-size:14px}
 .pf-sub{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pf-next{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--bi-gold-mid)}
 .next-lbl{font-size:10px;font-weight:600;color:var(--bi-gold-mid);margin-bottom:5px;display:flex;align-items:center;gap:3px}
-.pf-date{font-size:9px;color:var(--muted);margin-top:3px}
+.pf-date{display:flex;align-items:center;gap:5px;margin-top:4px}
+.tht-lbl{font-size:8px;font-weight:700;color:var(--bi-gold-mid);background:var(--bi-gold-pale);border:1px solid var(--bi-gold-border);padding:1px 5px;border-radius:3px;letter-spacing:.06em;flex-shrink:0;font-family:var(--sans)}
+.tht-val{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--bi-navy)}
 .bc-expand{width:100%;border:none;background:none;border-top:1px solid var(--border);padding:8px;font-size:11px;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;transition:background .15s}
 .bc-expand:hover{background:var(--bi-gold-pale);color:var(--bi-navy)}
 .empty-state{text-align:center;padding:80px 24px;color:var(--muted)}
@@ -720,6 +733,34 @@ function parseDate(s) {
   }
   var d2 = new Date(s);
   return isNaN(d2) ? new Date(0) : d2;
+}
+
+// Formateer datum naar DD-MM-YYYY voor weergave.
+// Verwerkt: yyyy-MM-dd (ISO), MM/dd/yyyy (SP), dd-MM-yyyy (NL)
+function formateerTHT(s) {
+  if (!s || String(s).trim() === '' || String(s).trim() === '0') return '';
+  var str   = String(s).trim().split(' ')[0].split('T')[0];
+  var sep   = str.indexOf('/') !== -1 ? '/' : '-';
+  var parts = str.split(sep);
+  if (parts.length !== 3) return str;
+  var p0 = parts[0], p1 = parts[1], p2 = parts[2];
+  var day, month, year;
+  if      (p0.length === 4)           { year=p0; month=p1; day=p2;  } // ISO
+  else if (p2.length === 4 && sep==='/'){ month=p0; day=p1; year=p2; } // US
+  else if (p2.length === 4)           { day=p0; month=p1; year=p2;  } // NL
+  else return str;
+  return day.padStart(2,'0')+'-'+month.padStart(2,'0')+'-'+year;
+}
+
+// thtHtml: maak een consistente pf-date div met THT-label
+function thtHtml(dateStr, extraStyle) {
+  var val = formateerTHT(dateStr);
+  if (!val) return '';
+  var kleurClass = extraStyle || '';
+  return '<div class="pf-date">'
+    + '<span class="tht-lbl">THT</span>'
+    + '<span class="tht-val"' + (kleurClass ? ' style="'+kleurClass+'"' : '') + '>' + val + '</span>'
+    + '</div>';
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1402,6 +1443,15 @@ var binToAfdeling = {
 };
 
 // Bepaal afdeling van een materiaalgroep op basis van stellinglocaties
+function getAfdelingVanBin(loc) {
+  var b = String(loc).trim().toUpperCase();
+  var prefixen = Object.keys(binToAfdeling).sort(function(a,b){ return b.length - a.length; });
+  for (var j = 0; j < prefixen.length; j++) {
+    if (b.indexOf(prefixen[j].toUpperCase()) === 0) return binToAfdeling[prefixen[j]];
+  }
+  return null;
+}
+
 function getAfdelingVanGroep(g) {
   // Kijk naar volgend-locaties (stelling), niet naar PROD
   var locaties = g.volgend.map(function(r){ return r.loc || ''; });
@@ -1837,9 +1887,16 @@ function renderListRij(g) {
   var totalProd = 0; g.inProd.forEach(function(r){ totalProd += r.qty; });
   var prodPallets = g.inProd.length;
   var locMap = {};
-  g.volgend.forEach(function(r){ if (!locMap[r.loc]) locMap[r.loc]={qty:0,pallets:0}; locMap[r.loc].qty+=r.qty; locMap[r.loc].pallets+=1; });
+  // Alleen locaties van de actieve afdeling tonen (bij Alle: alles)
+  var volgendGefilterd = actieveAfdeling
+    ? g.volgend.filter(function(r) {
+        if (actieveAfdeling === 'Blokkades') return isBlokkadeLocatie(r.loc);
+        return getAfdelingVanBin(r.loc) === actieveAfdeling;
+      })
+    : g.volgend;
+  volgendGefilterd.forEach(function(r){ if (!locMap[r.loc]) locMap[r.loc]={qty:0,pallets:0}; locMap[r.loc].qty+=r.qty; locMap[r.loc].pallets+=1; });
   var totalStel = 0, totalStelPallets = 0;
-  g.volgend.forEach(function(r){ totalStel+=r.qty; totalStelPallets+=1; });
+  volgendGefilterd.forEach(function(r){ totalStel+=r.qty; totalStelPallets+=1; });
 
   // PROD kolom: leeg als niet in productie
   var prodCel = prodPallets > 0
@@ -2028,7 +2085,7 @@ function renderBadgeCard(g) {
           +'<div class="pf">'+icoHash+'<span class="pf-val'+(isDone?' striked':'')+'">'+row.batch+'</span></div>'
           +'<div class="pf">'+icoPin+'<span class="pf-sub">'+row.loc+'</span></div>'
           +'<div class="pf">'+icoWgt+'<span class="pf-sub">'+row.qty.toLocaleString('nl-NL')+' '+row.unit+'</span></div>'
-          +'<div class="pf-date">'+row.date+'</div>'
+          +thtHtml(row.date)
           +'</div></div></div>';
       }).join('')
     : '<div class="bc-panel empty-panel"><span>Nog geen pallet in PROD</span></div>';
@@ -2039,7 +2096,7 @@ function renderBadgeCard(g) {
       +'<div class="pf">'+icoHash+'<span class="'+(allDone?'pf-next':'pf-val')+'">'+next.batch+'</span></div>'
       +'<div class="pf">'+icoPin+'<span class="pf-sub">'+next.loc+'</span></div>'
       +'<div class="pf">'+icoWgt+'<span class="pf-sub">'+next.qty.toLocaleString('nl-NL')+' '+next.unit+'</span></div>'
-      +'<div class="pf-date">'+next.date+'</div></div>'
+      +thtHtml(next.date)+'</div>'
     : '<div class="bc-panel empty-panel"><span>Geen voorraad beschikbaar</span></div>';
 
   // Extra volgend pallets — alleen tonen als uitgebreid (beschikbaar[1+] + extern)
@@ -2055,14 +2112,14 @@ function renderBadgeCard(g) {
           +'<div style="padding-top:20px">'
           +'<div class="pf">'+icoHash+'<span class="pf-val" style="color:#9CA3AF;text-decoration:line-through">'+r.batch+'</span></div>'
           +'<div class="pf">'+icoWgt+'<span class="pf-sub">'+r.qty.toLocaleString('nl-NL')+' '+r.unit+'</span></div>'
-          +'<div class="pf-date" style="color:#9CA3AF">'+r.date+'</div>'
+          +thtHtml(r.date,'color:#9CA3AF')
           +'</div></div>';
       } else {
         return '<div class="bc-panel next-panel">'
           +'<div class="pf">'+icoHash+'<span class="pf-val">'+r.batch+'</span></div>'
           +'<div class="pf">'+icoPin+'<span class="pf-sub">'+r.loc+'</span></div>'
           +'<div class="pf">'+icoWgt+'<span class="pf-sub">'+r.qty.toLocaleString('nl-NL')+' '+r.unit+'</span></div>'
-          +'<div class="pf-date">'+r.date+'</div></div>';
+          +thtHtml(r.date)+'</div>';
       }
     }).join('');
   }
