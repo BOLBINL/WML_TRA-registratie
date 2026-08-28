@@ -870,7 +870,7 @@ function rijen2Groups(items) {
     var qty    = parseSapQty(r.Quantity || r.TOTAL || 0);
     var unit   = String(r.Unit || r.BUnit || '').trim();
     // Gebruik Created_On als tijdelijke FEFO-datum (later THT_Datum)
-    var date   = String(r.THT_Datum || r.Created_On || '').trim();
+    var date   = String(r.THT || r.THT_Datum || r.Created_On || '').trim();
 
     if (!matNr) return;
     if (!map[matNr]) map[matNr] = { matNr:matNr, desc:desc, inProd:[], volgend:[] };
