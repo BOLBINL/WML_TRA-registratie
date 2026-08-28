@@ -739,9 +739,14 @@ function normaliseerGroepen(grps) {
     g.volgend = g.volgend.slice().sort(fefoSort);
     g.inProd  = g.inProd.slice().sort(fefoSort);
 
-    // Tag extern pallets en maak aparte beschikbaar / extern arrays
-    g.volgend.forEach(function(r){ r.extern = isExternLocatie(r.loc); });
-    g._volgendBeschikbaar = g.volgend.filter(function(r){ return !r.extern; });
+    // Tag elk pallet: geblokkeerd > extern > beschikbaar (volgorde van exclusiviteit)
+    g.volgend.forEach(function(r){
+      r.geblokkeerd = isBlokkadeLocatie(r.loc);
+      r.extern      = !r.geblokkeerd && isExternLocatie(r.loc);
+    });
+    // Geblokkeerde pallets volledig uit FEFO en VOLGEND houden
+    g._volgendGeblokkeerd = g.volgend.filter(function(r){ return  r.geblokkeerd; });
+    g._volgendBeschikbaar = g.volgend.filter(function(r){ return !r.extern && !r.geblokkeerd; });
     g._volgendExtern      = g.volgend.filter(function(r){ return  r.extern; });
 
     var newFirst = g._volgendBeschikbaar.length > 0 ? g._volgendBeschikbaar[0].batch
@@ -781,6 +786,22 @@ function isExternLocatie(bin) {
   var b = String(bin).trim().toUpperCase();
   return EXTERN_LOCATIES.some(function(ext) {
     var e = ext.toUpperCase();
+    return b === e || b.indexOf(e) === 0;
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════
+// BLOKKADE LOCATIES — pallets op deze locaties zijn geblokkeerd/
+// in quarantaine. Ze worden NIET getoond in VOLGEND (FEFO) en
+// tellen NIET mee in de FEFO-berekening.
+// Configureerbaar via WML_FormVragen (Soort = blokkade_locatie).
+// ══════════════════════════════════════════════════════════════════
+var BLOKKADE_LOCATIES = ['BLOCKROH', 'BLOCKVERP', 'BLOCKVVL'];
+
+function isBlokkadeLocatie(bin) {
+  var b = String(bin).trim().toUpperCase();
+  return BLOKKADE_LOCATIES.some(function(blk) {
+    var e = blk.toUpperCase();
     return b === e || b.indexOf(e) === 0;
   });
 }
@@ -4626,6 +4647,7 @@ function laadFormVragen(callback) {
       var _afdelingBuffer       = [];   // Soort = afdeling → tabs + emoji
       var _lijnBuffer           = [];
       var _externBuffer         = [];
+      var _blokkadeBuffer       = [];   // Soort = blokkade_locatie → uit FEFO/VOLGEND
       var _ploegBuffer          = {};
       var _medewerkerBuffer     = {};
       items.forEach(function(r) {
@@ -4670,6 +4692,15 @@ function laadFormVragen(callback) {
         if (type === 'extern_locatie') {
           var extLoc = String(r.Title || '').trim();
           if (extLoc) _externBuffer.push(extLoc);
+          return;
+        }
+
+        // BLOKKADE LOCATIES (Soort = blokkade_locatie)
+        // Title = locatiecode of prefix (bv. 'BLOCKROH', 'BLOCKVERP')
+        // Pallets op deze locaties zijn geblokkeerd — niet tonen in FEFO/VOLGEND
+        if (type === 'blokkade_locatie') {
+          var blkLoc = String(r.Title || '').trim();
+          if (blkLoc) _blokkadeBuffer.push(blkLoc);
           return;
         }
 
@@ -4757,6 +4788,9 @@ function laadFormVragen(callback) {
       }
       if (_externBuffer.length) {
         EXTERN_LOCATIES = _externBuffer;
+      }
+      if (_blokkadeBuffer.length) {
+        BLOKKADE_LOCATIES = _blokkadeBuffer;
       }
       if (Object.keys(_ploegBuffer).length) {
         var pc = _ploegBuffer;
