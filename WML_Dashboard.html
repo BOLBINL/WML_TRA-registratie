@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WML Voorraad | TRA Registratie Dashboard</title>
+<title>WML Voorraad | TRA Registratie Dashboard — Demo v2</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -1492,6 +1492,17 @@ function setAfdeling(naam) {
 
 function filterOpAfdeling(groepen) {
   if (!actieveAfdeling) return groepen;
+
+  // Blokkades-tab: apart filter — toon materiaal als ERGENS een pallet
+  // op een blokkade-locatie staat (ook als er ook andere locaties zijn)
+  if (actieveAfdeling === 'Blokkades') {
+    return groepen.filter(function(g) {
+      return g.volgend.some(function(r){ return isBlokkadeLocatie(r.loc); })
+          || g.inProd.some(function(r){ return isBlokkadeLocatie(r.loc); });
+    });
+  }
+
+  // Alle andere tabs: gebruik eerste-locatie matching
   return groepen.filter(function(g) {
     return getAfdelingVanGroep(g) === actieveAfdeling;
   });
