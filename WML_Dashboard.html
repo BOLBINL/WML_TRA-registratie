@@ -869,7 +869,7 @@ function rijen2Groups(items) {
     var batch  = String(r.Batch || '').trim();
     var qty    = parseSapQty(r.Quantity || r.TOTAL || 0);
     var unit   = String(r.Unit || r.BUnit || '').trim();
-    // Gebruik Created_On als tijdelijke FEFO-datum (later THT_Datum)
+    // THT datum — SharePoint veldnaam is 'THT' (intern bevestigd)
     var date   = String(r.THT || r.THT_Datum || r.Created_On || '').trim();
 
     if (!matNr) return;
