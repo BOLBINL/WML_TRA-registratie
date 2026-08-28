@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WML TV Display — Biscuit International</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS — BI Design System (dark TV variant) ────────── */
+:root{
+  /* Donkere achtergronden (TV display) */
+  --bg:    #07111B;
+  --surf:  #0D1B2A;
+  --surf2: #142332;
+  --brd:   #1A2D40;
+  --txt:   #D8E8F5;
+  --dim:   #4A6A88;
+  --faint: #1F3450;
+
+  /* BI Goud — hoofdaccent "PAK DEZE" (Design System: #B8963A) */
+  --g:     #B8963A;
+  --g-bg:  #100B02;
+  --g-brd: #5A4010;
+  --g-lbl: #D4AD55;
+
+  /* Informatief blauw — klaarzetten (DS: info #1D4ED8 afgeleid) */
+  --b:     #5AB4FC;
+  --b-bg:  #040E1D;
+  --b-brd: #0A2E60;
+
+  /* Amber — waarschuwing (DS: warning #D97706, NOOIT aanpassen) */
+  --a:     #F9C744;
+  --a-bg:  #160E00;
+  --a-brd: #6A4400;
+
+  /* Rood — kritiek/blokkade (DS: danger #C0392B, NOOIT aanpassen) */
+  --r:     #F87171;
+  --r-bg:  #130303;
+  --r-brd: #6B1010;
+
+  /* Fonts — IBM Plex per Design System */
+  --fH:'IBM Plex Sans',sans-serif;
+  --fM:'IBM Plex Mono',monospace;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden}
+body{font-family:var(--fH);background:var(--bg);color:var(--txt)}
+#app{display:flex;flex-direction:column;height:100vh}
+
+/* ── HEADER ─────────────────────────────────────────────── */
+#header{
+  flex-shrink:0;height:62px;
+  background:var(--surf);border-bottom:2px solid var(--brd);
+  padding:0 28px;display:flex;align-items:center;justify-content:space-between;
+  user-select:none;cursor:default;
+}
+.hd-l{display:flex;flex-direction:column;gap:1px}
+.hd-brand{font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.1em}
+.hd-afd{font-size:26px;font-weight:800;color:var(--txt);text-transform:uppercase;letter-spacing:.02em;line-height:1}
+.hd-r{text-align:right}
+#clock{font-family:var(--fM);font-size:38px;font-weight:700;color:var(--txt);letter-spacing:.04em;line-height:1}
+#datum{font-size:11px;color:var(--dim);margin-top:1px}
+
+/* ── AFDELING TABS ──────────────────────────────────────── */
+#afd-bar{
+  flex-shrink:0;height:42px;
+  background:var(--surf2);border-bottom:1px solid var(--brd);
+  padding:0 28px;display:flex;align-items:center;gap:4px;overflow-x:auto;
+}
+.afd-tab{
+  padding:6px 16px;background:none;border:1px solid var(--brd);border-radius:20px;
+  color:var(--dim);font-family:var(--fH);font-size:12px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.06em;cursor:pointer;white-space:nowrap;
+  transition:all .15s;
+}
+.afd-tab:hover{border-color:var(--g);color:var(--g)}
+.afd-tab.active{background:var(--g-brd);border-color:var(--g);color:var(--g);font-weight:800}
+
+/* ── FEFO ALERT BANNER ──────────────────────────────────── */
+#fefo-alert{
+  flex-shrink:0;display:none;
+  background:var(--r-bg);border-bottom:3px solid var(--r-brd);
+  padding:8px 28px;align-items:center;gap:14px;flex-wrap:wrap;
+}
+.fa-lbl{font-size:15px;font-weight:800;color:var(--r);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+.fa-chips{display:flex;gap:6px;flex-wrap:wrap}
+.fa-chip{background:rgba(248,113,113,.1);border:1px solid var(--r-brd);border-radius:5px;
+  padding:3px 10px;font-family:var(--fM);font-size:13px;font-weight:700;color:var(--r)}
+
+/* ── TABLE HEADER ───────────────────────────────────────── */
+#tbl-hdr{
+  flex-shrink:0;display:grid;
+  grid-template-columns:230px 1fr 1fr;gap:3px;
+  padding:5px 28px 2px;
+}
+.th-lbl{font-size:9px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.1em;padding:0 12px}
+
+/* ── MATERIAL GRID ──────────────────────────────────────── */
+#mat-grid{
+  flex:1;display:flex;flex-direction:column;
+  gap:3px;padding:2px 28px 4px;overflow:hidden;min-height:0;
+}
+.mat-row{
+  flex:1;display:grid;grid-template-columns:230px 1fr 1fr;
+  gap:3px;min-height:70px;max-height:120px;
+}
+
+/* INFO CELL */
+.c-info{
+  background:var(--surf);border:1px solid var(--brd);border-radius:8px 0 0 8px;
+  padding:8px 14px;display:flex;flex-direction:column;justify-content:center;gap:3px;overflow:hidden;
+}
+.c-matnr{font-family:var(--fM);font-size:11px;color:var(--dim)}
+.c-naam{font-size:clamp(13px,1.5vw,19px);font-weight:800;color:var(--txt);
+  text-transform:uppercase;line-height:1.1}
+
+/* CURRENT CELL — BI Goud */
+.c-cur{
+  background:var(--g-bg);border:1px solid var(--g-brd);border-left:none;
+  padding:8px 16px;display:flex;flex-direction:column;justify-content:center;gap:3px;
+  position:relative;overflow:hidden;
+}
+.c-cur::after{content:'\2713 PAK DEZE';position:absolute;top:7px;right:10px;
+  font-size:9px;font-weight:700;color:var(--g-lbl);letter-spacing:.1em;opacity:.75}
+.c-cur.warn{background:var(--a-bg);border-color:var(--a-brd)}
+.c-cur.warn::after{content:'\26A0 BIJNA LEEG';color:var(--a)}
+.c-cur.stop{background:var(--r-bg);border-color:var(--r-brd)}
+.c-cur.stop::after{content:'\26D4 FEFO FOUT';color:var(--r)}
+.c-cur.leeg{background:var(--r-bg);border-color:var(--r-brd)}
+.c-cur.leeg::after{content:'\2014 GEEN BATCH';color:var(--r);opacity:.5}
+.bn{font-family:var(--fM);font-size:clamp(22px,2.8vw,40px);font-weight:700;color:var(--g);line-height:1;letter-spacing:.02em}
+.c-cur.warn .bn{color:var(--a)}
+.c-cur.stop .bn,.c-cur.leeg .bn{color:var(--r)}
+.bl{font-size:clamp(14px,1.8vw,22px);font-weight:700;color:var(--g-lbl);text-transform:uppercase;letter-spacing:.02em}
+.c-cur.warn .bl{color:var(--a);opacity:.85}
+.c-cur.stop .bl,.c-cur.leeg .bl{color:var(--r);opacity:.75}
+.bq{font-family:var(--fM);font-size:11px;color:var(--g);opacity:.55}
+
+/* NEXT CELL */
+.c-nxt{
+  background:var(--b-bg);border:1px solid var(--b-brd);border-left:none;
+  border-radius:0 8px 8px 0;
+  padding:8px 16px;display:flex;flex-direction:column;justify-content:center;gap:3px;
+  position:relative;overflow:hidden;
+}
+.c-nxt::after{content:'\2192 KLAARZETTEN';position:absolute;top:7px;right:10px;
+  font-size:9px;font-weight:700;color:var(--b);letter-spacing:.1em;opacity:.55}
+.c-nxt.geen{background:var(--r-bg);border-color:var(--r-brd)}
+.c-nxt.geen::after{content:'\26A0 GEEN VOORRAAD';color:var(--r)}
+.nbn{font-family:var(--fM);font-size:clamp(18px,2.3vw,34px);font-weight:700;color:var(--b);line-height:1}
+.c-nxt.geen .nbn{color:var(--r);font-size:clamp(13px,1.5vw,18px);opacity:.7}
+.nbl{font-size:clamp(13px,1.6vw,20px);font-weight:700;color:var(--b);opacity:.8;text-transform:uppercase;letter-spacing:.02em}
+.ntht{font-family:var(--fM);font-size:11px;color:var(--b);opacity:.4}
+
+/* ── FOOTER ─────────────────────────────────────────────── */
+#footer{
+  flex-shrink:0;height:36px;
+  background:var(--surf);border-top:1px solid var(--brd);
+  padding:0 28px;display:grid;grid-template-columns:1fr auto 160px;align-items:center;gap:16px;
+}
+.ft-l{display:flex;align-items:center;gap:8px}
+.ft-dot{width:6px;height:6px;border-radius:50%;background:var(--g);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
+.ft-txt{font-size:10px;color:var(--dim)}
+#page-ind{font-size:12px;font-weight:700;font-family:var(--fM);color:var(--dim);
+  text-align:center;white-space:nowrap;display:none}
+.ft-bars{display:flex;flex-direction:column;gap:3px}
+.ft-bar-row{display:flex;align-items:center;gap:6px}
+.ft-bar-lbl{font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;width:36px;text-align:right}
+.ft-bar{width:100px;height:3px;background:var(--faint);border-radius:2px;overflow:hidden}
+.ft-fill{height:100%;border-radius:2px;transition:width 1s linear}
+.ft-fill-data{background:var(--g)}
+.ft-fill-page{background:var(--b)}
+
+/* ── LOADING / EMPTY ────────────────────────────────────── */
+#loading-ov{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:18px;z-index:50;
+}
+.ld-ring{width:44px;height:44px;border:3px solid var(--faint);
+  border-top-color:var(--g);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ld-txt{font-size:14px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em}
+#empty-blk{display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:10px}
+.eb-t{font-size:24px;font-weight:700;color:var(--faint);text-transform:uppercase}
+.eb-s{font-size:12px;color:var(--dim)}
+
+/* ── SETTINGS PANEL ─────────────────────────────────────── */
+#sp-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:200;
+  align-items:center;justify-content:center}
+.sp-box{background:var(--surf2);border:1px solid var(--brd);border-radius:16px;
+  padding:28px;width:480px;max-width:94vw;display:flex;flex-direction:column;gap:14px}
+.sp-h{font-size:20px;font-weight:800;color:var(--txt);text-transform:uppercase;letter-spacing:.05em}
+.sp-f{display:flex;flex-direction:column;gap:5px}
+.sp-lbl{font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.09em}
+.sp-inp,.sp-sel{padding:10px 12px;background:var(--bg);border:1px solid var(--brd);
+  border-radius:8px;color:var(--txt);font-size:13px;font-family:var(--fM);outline:none;appearance:none}
+.sp-sel{font-family:var(--fH);cursor:pointer}
+.sp-inp:focus,.sp-sel:focus{border-color:var(--g)}
+.sp-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sp-save{padding:12px;background:var(--g-brd);border:none;border-radius:8px;
+  color:var(--g);font-size:13px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.06em;font-family:var(--fH)}
+.sp-close{padding:10px;background:none;border:1px solid var(--brd);border-radius:8px;
+  color:var(--dim);font-size:12px;cursor:pointer;font-family:var(--fH)}
+</style>
+</head>
+<body>
+
+<div id="loading-ov">
+  <div class="ld-ring"></div>
+  <div class="ld-txt">Voorraad laden&hellip;</div>
+</div>
+
+<div id="app">
+
+  <!-- HEADER -->
+  <div id="header">
+    <div class="hd-l">
+      <div class="hd-brand">Biscuit International &mdash; Broek op Langedijk</div>
+      <div class="hd-afd" id="hd-afd">Alle afdelingen</div>
+    </div>
+    <div class="hd-r">
+      <div id="clock">--:--</div>
+      <div id="datum">&mdash;</div>
+    </div>
+  </div>
+
+  <!-- AFDELING TABS -->
+  <div id="afd-bar">
+    <button class="afd-tab" data-afd="">Alle</button>
+    <button class="afd-tab" data-afd="Deegmakerij">Deegmakerij</button>
+    <button class="afd-tab" data-afd="Ovenruimte">Ovenruimte</button>
+    <button class="afd-tab" data-afd="Droge grondstoffen">Droge grondstoffen</button>
+    <button class="afd-tab" data-afd="Palletijzer">Palletijzer</button>
+    <button class="afd-tab" data-afd="Shuttle">Shuttle</button>
+  </div>
+
+  <!-- FEFO ALERT -->
+  <div id="fefo-alert">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F87171" stroke-width="2.5" style="flex-shrink:0">
+      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+      <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+    <span class="fa-lbl">FEFO AFWIJKING &mdash; MELD AAN TEAMLEIDER</span>
+    <div class="fa-chips" id="fa-chips"></div>
+  </div>
+
+  <!-- TABLE HEADER -->
+  <div id="tbl-hdr">
+    <span class="th-lbl">Materiaal</span>
+    <span class="th-lbl">&#10003; Pak deze batch</span>
+    <span class="th-lbl">&rarr; Klaarzetten</span>
+  </div>
+
+  <!-- GRID -->
+  <div id="mat-grid"></div>
+  <div id="empty-blk">
+    <div class="eb-t">Geen data</div>
+    <div class="eb-s">Druk op S voor instellingen</div>
+  </div>
+
+  <!-- FOOTER -->
+  <div id="footer">
+    <div class="ft-l">
+      <div class="ft-dot"></div>
+      <span class="ft-txt" id="ft-txt">Laden&hellip;</span>
+    </div>
+    <div id="page-ind"></div>
+    <div class="ft-bars">
+      <div class="ft-bar-row">
+        <span class="ft-bar-lbl">Data</span>
+        <div class="ft-bar"><div class="ft-fill ft-fill-data" id="ft-data-fill" style="width:100%"></div></div>
+      </div>
+      <div class="ft-bar-row" id="page-bar-row" style="display:none">
+        <span class="ft-bar-lbl">Pagina</span>
+        <div class="ft-bar"><div class="ft-fill ft-fill-page" id="ft-page-fill" style="width:100%"></div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- SETTINGS PANEL -->
+<div id="sp-ov">
+  <div class="sp-box">
+    <div class="sp-h">&#9881; Instellingen TV</div>
+    <div class="sp-f">
+      <label class="sp-lbl">Data URL &mdash; Flow 5 (WML Voorraad Ophalen)</label>
+      <input class="sp-inp" id="sp-url" type="text" placeholder="https://prod-xx&hellip;">
+    </div>
+    <div class="sp-f">
+      <label class="sp-lbl">Prefix mapping (PROD-locatie &rarr; Afdeling)</label>
+      <input class="sp-inp" id="sp-pfx" type="text" placeholder="PROD01=Deegmakerij,PROD02=Ovenruimte,&hellip;">
+    </div>
+    <div class="sp-row">
+      <div class="sp-f">
+        <label class="sp-lbl">Data verversing (seconden)</label>
+        <input class="sp-inp" id="sp-ref" type="number" min="30" max="3600" placeholder="60">
+      </div>
+      <div class="sp-f">
+        <label class="sp-lbl">Pagina wisseltijd (seconden)</label>
+        <input class="sp-inp" id="sp-pag" type="number" min="3" max="120" placeholder="8">
+      </div>
+    </div>
+    <button class="sp-save" onclick="slaOp()">Opslaan &amp; Herladen</button>
+    <button class="sp-close" onclick="sluitSP()">Sluiten</button>
+  </div>
+</div>
+
+<script>
+function pd(s) {
+  if (!s) return new Date(0);
+  var p = String(s).split('-');
+  if (p.length === 3 && p[2].length === 4) {
+    var d = new Date(p[2]+'-'+p[1]+'-'+p[0]);
+    return isNaN(d) ? new Date(0) : d;
+  }
+  var d2 = new Date(s);
+  return isNaN(d2) ? new Date(0) : d2;
+}
+function pq(s) {
+  if (!s) return 0;
+  var n = parseFloat(String(s).replace(/\./g,'').replace(',','.'));
+  return isNaN(n) ? 0 : n;
+}
+function isProd(bin) { return /^PROD/i.test(String(bin).trim()); }
+
+var prefixMap = {};
+function laadPrefixMap() {
+  var raw = localStorage.getItem('wml_tv_prefix') ||
+    'PROD01=Deegmakerij,PROD02=Ovenruimte,PROD03=Droge grondstoffen,PROD04=Palletijzer,PROD05=Shuttle';
+  prefixMap = {};
+  raw.split(',').forEach(function(p) {
+    var kv = p.trim().split('=');
+    if (kv.length >= 2) prefixMap[kv[0].trim()] = kv.slice(1).join('=').trim();
+  });
+}
+function getBinAfd(bin) {
+  var b = String(bin).toUpperCase().trim();
+  for (var k in prefixMap) {
+    if (b.indexOf(k.toUpperCase()) === 0) return prefixMap[k];
+  }
+  return null;
+}
+
+function rijen2Groups(items) {
+  var map = {};
+  var fs = function(a, b) {
+    return (a.date ? pd(a.date).getTime() : Infinity) -
+           (b.date ? pd(b.date).getTime() : Infinity);
+  };
+  items.forEach(function(r) {
+    if (String(r.Status||'').trim().toUpperCase() === 'VERWIJDERD') return;
+    var matNr = String(r.Material || r.Materiaal || '').replace(/\./g,'').trim();
+    var desc  = String(r.Material_Description || r.Materiaal_Omschrijving || '').trim();
+    var bin   = String(r.Storage_Bin || '').trim();
+    var batch = String(r.Batch || '').trim();
+    var qty   = pq(r.Quantity || r.TOTAL || 0);
+    var unit  = String(r.Unit || r.BUnit || '').trim();
+    var date  = String(r.THT_Datum || r.Created_On || '').trim();
+    var pallet= String(r.Pallet_Number || '').trim();
+    if (!matNr) return;
+    if (!map[matNr]) map[matNr] = { matNr:matNr, desc:desc, inProd:[], volgend:[] };
+    var rij = { loc:bin, pallet:pallet, batch:batch, unit:unit, qty:qty, date:date };
+    if (isProd(bin)) map[matNr].inProd.push(rij);
+    else             map[matNr].volgend.push(rij);
+  });
+  return Object.values(map).map(function(g) {
+    g.inProd.sort(fs); g.volgend.sort(fs); return g;
+  });
+}
+
+function filterGroups(gs) {
+  var afd = activeAfd;
+  return gs.filter(function(g) {
+    if (!g.inProd.length) return false;
+    if (!afd) return true;
+    return g.inProd.some(function(r) { return getBinAfd(r.loc) === afd; });
+  });
+}
+
+var groups    = [];
+var activeAfd = localStorage.getItem('wml_tv_afdeling') || '';
+var REFRESH   = parseInt(localStorage.getItem('wml_tv_refresh') || '60');
+var PAGE_SEC  = parseInt(localStorage.getItem('wml_tv_page_sec') || '8');
+var dataLeft  = REFRESH;
+var dataTimer = null;
+var pages     = [];
+var curPage   = 0;
+var pageLeft  = PAGE_SEC;
+var pageTimer = null;
+
+function klok() {
+  var n = new Date();
+  document.getElementById('clock').textContent =
+    String(n.getHours()).padStart(2,'0') + ':' +
+    String(n.getMinutes()).padStart(2,'0');
+  var D = ['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag'];
+  var M = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+  document.getElementById('datum').textContent =
+    D[n.getDay()] + ' ' + n.getDate() + ' ' + M[n.getMonth()] + ' ' + n.getFullYear();
+}
+setInterval(klok, 10000); klok();
+
+function renderRow(g) {
+  var prod = g.inProd[0];
+  var volg = g.volgend[0];
+  var totQ = g.inProd.reduce(function(a,r){ return a+r.qty; }, 0);
+  var fefoFout = false;
+  if (prod && volg && volg.date && prod.date) {
+    fefoFout = pd(volg.date).getTime() < pd(prod.date).getTime();
+  }
+  var isBijna = !fefoFout && totQ > 0 && totQ < 300;
+  var curClass = 'c-cur' + (fefoFout ? ' stop' : isBijna ? ' warn' : !prod ? ' leeg' : '');
+  var curHTML = !prod
+    ? '<div class="bn" style="font-size:clamp(16px,2vw,24px);opacity:.5">&mdash;</div>'
+    : '<div class="bn">' + (fefoFout ? '\u26A0 ' : '') + prod.batch + '</div>'
+      + '<div class="bl">' + prod.loc + '</div>'
+      + '<div class="bq">' + totQ.toLocaleString('nl-NL') + ' ' + prod.unit + '</div>';
+  var nxtClass = 'c-nxt' + (!volg ? ' geen' : '');
+  var nxtHTML  = !volg
+    ? '<div class="nbn">GEEN VOORRAAD</div><div class="nbl" style="opacity:.5">Contacteer logistiek</div>'
+    : '<div class="nbn">' + volg.batch + '</div>'
+      + '<div class="nbl">' + volg.loc + '</div>'
+      + (volg.date ? '<div class="ntht">THT ' + volg.date + '</div>' : '');
+  return '<div class="mat-row">'
+    + '<div class="c-info"><div class="c-matnr">' + g.matNr + '</div>'
+    + '<div class="c-naam">' + g.desc + '</div></div>'
+    + '<div class="' + curClass + '">' + curHTML + '</div>'
+    + '<div class="' + nxtClass + '">' + nxtHTML + '</div>'
+    + '</div>';
+}
+
+function calcRowsPerPage() {
+  var h = document.getElementById('mat-grid').clientHeight;
+  if (!h || h < 50) h = window.innerHeight - 62 - 42 - 30 - 36 - 10;
+  return Math.max(1, Math.floor(h / 73));
+}
+
+function buildPages(vis) {
+  var pp = calcRowsPerPage();
+  pages = [];
+  for (var i = 0; i < vis.length; i += pp) pages.push(vis.slice(i, i + pp));
+  if (!pages.length) pages = [[]];
+}
+
+function renderPage(idx) {
+  var pg = pages[idx] || [];
+  document.getElementById('mat-grid').innerHTML = pg.map(renderRow).join('');
+  var ind = document.getElementById('page-ind');
+  var pbr = document.getElementById('page-bar-row');
+  if (pages.length > 1) {
+    ind.textContent = (idx + 1) + ' / ' + pages.length;
+    ind.style.display = 'block';
+    pbr.style.display = 'flex';
+  } else {
+    ind.style.display = 'none';
+    pbr.style.display = 'none';
+  }
+}
+
+function startPageTimer() {
+  if (pageTimer) clearInterval(pageTimer);
+  if (pages.length <= 1) {
+    document.getElementById('page-bar-row').style.display = 'none';
+    document.getElementById('page-ind').style.display = 'none';
+    return;
+  }
+  pageLeft = PAGE_SEC;
+  document.getElementById('ft-page-fill').style.width = '100%';
+  pageTimer = setInterval(function() {
+    pageLeft--;
+    document.getElementById('ft-page-fill').style.width = (pageLeft / PAGE_SEC * 100) + '%';
+    if (pageLeft <= 0) {
+      curPage = (curPage + 1) % pages.length;
+      renderPage(curPage);
+      pageLeft = PAGE_SEC;
+      document.getElementById('ft-page-fill').style.width = '100%';
+    }
+  }, 1000);
+}
+
+function render() {
+  var vis  = filterGroups(groups);
+  var grid = document.getElementById('mat-grid');
+  var empt = document.getElementById('empty-blk');
+  if (!vis.length) {
+    grid.innerHTML = ''; grid.style.display = 'none'; empt.style.display = 'flex';
+    document.getElementById('fefo-alert').style.display = 'none';
+    if (pageTimer) { clearInterval(pageTimer); pageTimer = null; }
+    document.getElementById('page-ind').style.display = 'none';
+    document.getElementById('page-bar-row').style.display = 'none';
+    return;
+  }
+  grid.style.display = 'flex'; empt.style.display = 'none';
+  var fefoLijst = [];
+  vis.forEach(function(g) {
+    var prod = g.inProd[0]; var volg = g.volgend[0];
+    if (prod && volg && volg.date && prod.date) {
+      if (pd(volg.date).getTime() < pd(prod.date).getTime())
+        fefoLijst.push(g.desc.length > 26 ? g.desc.substring(0,24)+'\u2026' : g.desc);
+    }
+  });
+  var ab = document.getElementById('fefo-alert');
+  if (fefoLijst.length) {
+    ab.style.display = 'flex';
+    document.getElementById('fa-chips').innerHTML =
+      fefoLijst.map(function(n){ return '<div class="fa-chip">'+n+'</div>'; }).join('');
+  } else { ab.style.display = 'none'; }
+  buildPages(vis); curPage = 0; renderPage(curPage); startPageTimer();
+}
+
+function setActiveAfdTab(afd) {
+  activeAfd = afd;
+  document.querySelectorAll('.afd-tab').forEach(function(btn) {
+    btn.classList.toggle('active', btn.getAttribute('data-afd') === afd);
+  });
+  document.getElementById('hd-afd').textContent = afd || 'Alle afdelingen';
+  localStorage.setItem('wml_tv_afdeling', afd);
+  if (pageTimer) { clearInterval(pageTimer); pageTimer = null; }
+  curPage = 0; render();
+}
+
+document.getElementById('afd-bar').addEventListener('click', function(e) {
+  var btn = e.target.closest('.afd-tab');
+  if (btn) setActiveAfdTab(btn.getAttribute('data-afd'));
+});
+
+function laadData() {
+  var url = localStorage.getItem('wml_pa_data_url');
+  if (!url) {
+    document.getElementById('loading-ov').style.display = 'none';
+    document.getElementById('mat-grid').style.display = 'none';
+    document.getElementById('empty-blk').style.display = 'flex';
+    document.getElementById('ft-txt').textContent = 'Geen data-URL \u2014 druk S voor instellingen';
+    return;
+  }
+  fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var items = Array.isArray(data) ? data : (data.value || []);
+      groups = rijen2Groups(items);
+      render();
+      var n = new Date();
+      document.getElementById('ft-txt').textContent =
+        'Vernieuwd ' + String(n.getHours()).padStart(2,'0') + ':' +
+        String(n.getMinutes()).padStart(2,'0') + ':' +
+        String(n.getSeconds()).padStart(2,'0') +
+        ' \u2014 ' + groups.length + ' materialen';
+      document.getElementById('loading-ov').style.display = 'none';
+    })
+    .catch(function() {
+      document.getElementById('loading-ov').style.display = 'none';
+      document.getElementById('ft-txt').textContent = 'Laden mislukt \u2014 herlaadt automatisch';
+      if (!groups.length) {
+        document.getElementById('mat-grid').style.display = 'none';
+        document.getElementById('empty-blk').style.display = 'flex';
+      }
+    });
+}
+
+function startDataTimer() {
+  if (dataTimer) clearInterval(dataTimer);
+  dataLeft = REFRESH;
+  document.getElementById('ft-data-fill').style.width = '100%';
+  dataTimer = setInterval(function() {
+    dataLeft--;
+    document.getElementById('ft-data-fill').style.width = (dataLeft / REFRESH * 100) + '%';
+    if (dataLeft <= 0) {
+      dataLeft = REFRESH;
+      document.getElementById('ft-data-fill').style.width = '100%';
+      laadData();
+    }
+  }, 1000);
+}
+
+function openSP() {
+  document.getElementById('sp-url').value = localStorage.getItem('wml_pa_data_url') || '';
+  document.getElementById('sp-pfx').value = localStorage.getItem('wml_tv_prefix') || '';
+  document.getElementById('sp-ref').value = REFRESH;
+  document.getElementById('sp-pag').value = PAGE_SEC;
+  document.getElementById('sp-ov').style.display = 'flex';
+}
+function sluitSP() { document.getElementById('sp-ov').style.display = 'none'; }
+function slaOp() {
+  var url = document.getElementById('sp-url').value.trim();
+  var pfx = document.getElementById('sp-pfx').value.trim();
+  var ref = parseInt(document.getElementById('sp-ref').value) || 60;
+  var pag = parseInt(document.getElementById('sp-pag').value) || 8;
+  if (url) localStorage.setItem('wml_pa_data_url', url);
+  if (pfx) localStorage.setItem('wml_tv_prefix', pfx);
+  localStorage.setItem('wml_tv_refresh', ref);
+  localStorage.setItem('wml_tv_page_sec', pag);
+  REFRESH = ref; PAGE_SEC = pag;
+  sluitSP(); laadPrefixMap(); laadData(); startDataTimer();
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key.toLowerCase() === 's')
+    document.getElementById('sp-ov').style.display === 'flex' ? sluitSP() : openSP();
+});
+var lpT = null;
+var hdr = document.getElementById('header');
+hdr.addEventListener('mousedown',  function(){ lpT = setTimeout(openSP, 3000); });
+hdr.addEventListener('mouseup',    function(){ if(lpT){clearTimeout(lpT);lpT=null;} });
+hdr.addEventListener('touchstart', function(){ lpT = setTimeout(openSP, 3000); }, {passive:true});
+hdr.addEventListener('touchend',   function(){ if(lpT){clearTimeout(lpT);lpT=null;} });
+
+laadPrefixMap();
+setActiveAfdTab(activeAfd);
+laadData();
+startDataTimer();
+</script>
+</body>
+</html>
