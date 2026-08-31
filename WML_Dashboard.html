@@ -2036,6 +2036,15 @@ function renderFKCard(g) {
 }
 
 // ── VIEW 2 ─────────────────────────────────────────────────
+// Controleert of een materiaalgroep een kuip registratie knop heeft
+// (KuipRegistratie = Ja in WML_FormMateriaal via SharePoint)
+function heeftKuipRegistratieGroep(g) {
+  var matNrStr = String(g.matNr);
+  return FORM_CATALOG.some(function(f) {
+    return f.kuipMatnrs && f.kuipMatnrs.indexOf(matNrStr) > -1;
+  });
+}
+
 function renderBoard(vis) {
   var grid = document.getElementById('grid'), empty = document.getElementById('boardempty');
   var metProd = vis.filter(function(g){ return g.inProd.length > 0; });
@@ -2050,6 +2059,14 @@ function renderBoard(vis) {
   } else {
     gefilterd = metProd;
   }
+
+  // Kuip-materialen altijd bovenaan — stabiele sort: kuip=0 voor, rest=1 achter
+  gefilterd = gefilterd.slice().sort(function(a, b) {
+    var aK = heeftKuipRegistratieGroep(a) ? 0 : 1;
+    var bK = heeftKuipRegistratieGroep(b) ? 0 : 1;
+    return aK - bK;
+  });
+
   if (!gefilterd.length) { grid.innerHTML = ''; empty.style.display = 'block'; }
   else { empty.style.display = 'none'; grid.innerHTML = gefilterd.map(renderBadgeCard).join(''); }
   renderIngevuldeFormulieren();
